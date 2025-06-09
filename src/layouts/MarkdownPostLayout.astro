@@ -1,0 +1,12 @@
+---
+const { frontmatter } = Astro.props;
+const { title, pubDate, author, description, tags } = frontmatter;
+---
+
+<meta charset="utf-8" />
+<h1>{title}</h1>
+<p>날짜: {pubDate}</p>
+<p>작성자: {author}</p>
+<p>태그: {tags.join(" | ")}</p>
+<p>요약: {description}</p>
+<slot />
