@@ -1,14 +1,12 @@
 ---
 import BaseLayout from '../layouts/BaseLayout.astro';
-import '../styles/global.css';
-
+import '@styles/global.css';
 ---
-<BaseLayout
-	pageTitle="HomePage"
->
-	<p>Hello world!</p>
+
+<BaseLayout pageTitle="HomePage">
+  <p>Hello world!</p>
 </BaseLayout>
 
 <script>
-	import "../scripts/menu";
+  import '@scripts/menu';
 </script>

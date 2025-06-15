@@ -1,12 +1,31 @@
 ---
+import BaseLayout from './BaseLayout.astro';
+
 const { frontmatter } = Astro.props;
 const { title, pubDate, author, description, tags } = frontmatter;
 ---
 
-<meta charset="utf-8" />
-<h1>{title}</h1>
-<p>날짜: {pubDate}</p>
-<p>작성자: {author}</p>
-<p>태그: {tags.join(" | ")}</p>
-<p>요약: {description}</p>
-<slot />
+<BaseLayout pageTitle={title}>
+  <ul>
+    {
+      tags.map((tag: string) => (
+        <li class="tag">
+          <a href={`tags/${tag}`}>{tag}</a>
+        </li>
+      ))
+    }
+  </ul>
+
+  <p>날짜: {pubDate}</p>
+  <p>작성자: {author}</p>
+  <p>태그: {tags.join(' | ')}</p>
+  <p>요약: {description}</p>
+  <slot />
+</BaseLayout>
+
+<style>
+  .tag > a {
+    text-decoration: none;
+    color: black;
+  }
+</style>

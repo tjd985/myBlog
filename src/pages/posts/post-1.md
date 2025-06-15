@@ -1,13 +1,14 @@
 ---
 layout: ../../layouts/MarkdownPostLayout.astro
-title: 'Post-1'
+title: "Post-1"
 pubDate: 2022-07-01
-description: 'This is the first post of my new Astro blog.'
-author: 'Seongho'
-tags: ["astro", "blog", "learning in public"]
+description: "This is the first post of my new Astro blog."
+author: "Seongho"
+tags: ['post-1']
 ---
 
 ---
+
 Welcome to my _new blog_ about learning Astro! Here, I will share my learning journey as I build a new website.
 
 ## What I've accomplished

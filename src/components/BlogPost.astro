@@ -1,0 +1,13 @@
+---
+const { url, frontmatter } = Astro.props;
+const { title } = frontmatter;
+---
+
+<li class="post"><a href={url}>{title}</a></li>
+
+<style>
+  .post > a {
+    text-decoration: none;
+    color: black;
+  }
+</style>

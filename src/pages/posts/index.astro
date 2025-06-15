@@ -1,17 +1,27 @@
 ---
-import "../../styles/global.css";
-import BaseLayout from "../../layouts/BaseLayout.astro";
+import type { MarkdownInstance } from 'astro';
+import BaseLayout from '@layouts/BaseLayout.astro';
+import BlogPost from '@components/BlogPost.astro';
+import '@styles/global.css';
+import type { FrontMatter } from '@type/FrontMatter';
 
-type TitleColor = 'black' | 'red';
+const allPosts = Object.values(
+  import.meta.glob<MarkdownInstance<FrontMatter>>('./*.md', { eager: true })
+);
 
-const pageTitle = 'Post Page';
-const titleColor: TitleColor = 'red';
+const pageTitle = 'Posts';
 ---
 
 <BaseLayout pageTitle={pageTitle}>
-  <a href="/posts/post-1">Post-1</a>
+  <ul>
+    {
+      allPosts.map(({ url, frontmatter }) => (
+        <BlogPost url={url} frontmatter={frontmatter} />
+      ))
+    }
+  </ul>
 </BaseLayout>
 
 <script>
-  import "../../scripts/menu";
+  import '@scripts/menu';
 </script>
