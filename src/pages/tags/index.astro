@@ -2,14 +2,12 @@
 import type { MarkdownInstance } from 'astro';
 import BaseLayout from '@layouts/BaseLayout.astro';
 import type { FrontMatter } from '@type/FrontMatter';
+import { getCollection } from 'astro:content';
 
-const allPostList = Object.values(
-  import.meta.glob<MarkdownInstance<FrontMatter>>('@pages/posts/*.md', {
-    eager: true,
-  })
-);
+const allPostList = await getCollection('blog');
+
 const allTagList = allPostList.reduce<string[]>((acc, cur) => {
-  return [...acc, ...cur.frontmatter.tags];
+  return [...acc, ...cur.data.tags];
 }, []);
 ---
 

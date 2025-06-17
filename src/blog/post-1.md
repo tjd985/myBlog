@@ -1,9 +1,8 @@
 ---
-layout: ../../layouts/MarkdownPostLayout.astro
 title: "Post-1"
-pubDate: 2022-07-01
-description: "This is the first post of my new Astro blog."
 author: "Seongho"
+description: "This is the first post of my new Astro blog."
+pubDate: 2022-07-01
 tags: ['post-1']
 ---
 

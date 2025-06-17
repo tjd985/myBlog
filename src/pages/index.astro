@@ -1,10 +1,13 @@
 ---
 import BaseLayout from '../layouts/BaseLayout.astro';
+import { Greeting } from '@components/Greeting';
+
 import '@styles/global.css';
 ---
 
 <BaseLayout pageTitle="HomePage">
   <p>Hello world!</p>
+  <Greeting client:load messages={['hello', 'astrto', 'world']} />
 </BaseLayout>
 
 <script>
