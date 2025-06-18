@@ -2,10 +2,6 @@
 import Header from '@components/Header.astro';
 import Footer from '@components/Footer.astro';
 import '@styles/global.css';
-
-const { pageTitle } = Astro.props;
-
-const titleColor = '#ff0000';
 ---
 
 <html lang="ko">
@@ -17,19 +13,10 @@ const titleColor = '#ff0000';
     <title>seongho's blog</title>
   </head>
   <body>
-    <Header />
-    <h1>{pageTitle}</h1>
+    <!-- <Header /> -->
     <slot />
     <Footer />
-    <script>
-      import '@scripts/menu.ts';
-    </script>
 
-    <style define:vars={{ titleColor }}>
-      h1 {
-        font-size: 3rem;
-        color: var(--titleColor);
-      }
-    </style>
+    <style></style>
   </body>
 </html>

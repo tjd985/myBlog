@@ -1,13 +1,18 @@
 ---
+import { getCollection } from 'astro:content';
+import BlogPost from '@components/BlogPost.astro';
 import BaseLayout from '../layouts/BaseLayout.astro';
-import { Greeting } from '@components/Greeting';
+import BlogCard from '@components/BlogCard.astro';
 
 import '@styles/global.css';
+
+const allPosts = await getCollection('post');
 ---
 
 <BaseLayout pageTitle="HomePage">
-  <p>Hello world!</p>
-  <Greeting client:load messages={['hello', 'astrto', 'world']} />
+  <ul>
+    {allPosts.map((post) => <BlogCard postInfo={post.data} />)}
+  </ul>
 </BaseLayout>
 
 <script>
