@@ -1,8 +1,10 @@
 export interface FrontMatter {
   layout: string;
   title: string;
-  pubDate: string;
+  pubDate: Date;
   description: string;
-  author: string;
-  tags: string[];
+  thumbnail: {
+    src: string;
+    alt: string;
+  };
 }
