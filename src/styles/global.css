@@ -1,35 +1,40 @@
+@import url('https://cdn.jsdelivr.net/gh/orioncactus/pretendard/dist/web/static/pretendard.css');
 @import 'tailwindcss';
 
-html {
-  background-color: #f1f5f9;
-  font-family: sans-serif;
+@theme {
+  --color-osh-white: #f1f5f9;
+  --color-osh-grey: #999;
+  --font-pretendard: 'Pretendard', sans-serif;
 }
 
-html.dark {
-  background-color: #0d0950;
-  color: #fff;
+@layer base {
+  html {
+    @apply bg-osh-white;
+    @apply font-pretendard;
+  }
+
+  body {
+    @apply m-[0_auto];
+    @apply w-full;
+    @apply max-w-[600px];
+    @apply py-[100px];
+  }
 }
 
-.dark .nav-links a {
-  color: #fff;
+@layer components {
+  .blog-card {
+    @apply w-full;
+    @apply flex;
+    @apply justify-between;
+    @apply rounded-[15px];
+    @apply bg-white;
+    @apply p-[20px];
+    @apply h-fit;
+  }
 }
 
-body {
-  margin: 0 auto;
-  width: 100%;
-  max-width: 80ch;
-  padding: 1rem;
-  line-height: 1.5;
-}
-
-* {
-  box-sizing: border-box;
-}
-
-h1 {
-  margin: 1rem 0;
-  font-size: 2.5rem;
-}
-
-@media screen and (min-width: 636px) {
+@layer utilities {
+  .text-xs {
+    @apply text-[12px];
+  }
 }

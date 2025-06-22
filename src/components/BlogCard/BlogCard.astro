@@ -1,0 +1,31 @@
+---
+import type { HTMLAttributes } from 'astro/types';
+import type { InferEntrySchema } from 'astro:content';
+import PostImage from '@components/PostImage/PostImage.astro';
+
+interface Props extends HTMLAttributes<'article'> {
+  postInfo: InferEntrySchema<'post'>;
+  href: string;
+}
+
+const { postInfo, href, ...nativeArticleProps } = Astro.props;
+const { title, description, pubDate, thumbnail } = postInfo;
+---
+
+<a href={href}>
+  <article {...nativeArticleProps}>
+    <div class="max-w-[70%]">
+      <h1 class="text-2xl font-bold mb-[10px]">{title}</h1>
+      <p class="text-osh-grey mb-[20px] text-sm">{description}</p>
+      <p class="text-xs">{pubDate}</p>
+    </div>
+    <div class="w-[150px] h-[100px]">
+      <PostImage
+        class="image"
+        src={thumbnail.src}
+        alt={thumbnail.alt}
+        objectFit="cover"
+      />
+    </div>
+  </article>
+</a>

@@ -1,0 +1,22 @@
+---
+import type { HTMLAttributes } from 'astro/types';
+
+type ObjectFit = 'fill' | 'contain' | 'cover' | 'none' | 'scale-down';
+
+interface Props extends HTMLAttributes<'img'> {
+  objectFit?: ObjectFit;
+}
+
+const { objectFit = 'fill', ...nativeImgProps } = Astro.props;
+---
+
+<img {...nativeImgProps} />
+
+<style define:vars={{ objectFit }}>
+  img {
+    object-fit: var(--objectFit);
+    @apply rounded-[10px];
+    @apply w-full;
+    @apply h-full;
+  }
+</style>

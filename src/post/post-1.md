@@ -3,13 +3,13 @@ title: "Post-1"
 description: "This is the first post of my new Astro blog."
 pubDate: 2022-07-01
 thumbnail: {
-  src: "/favicon.svg",
+  src: "/astro-logo.webp",
   alt: '아스트로 이미지'
 }
-
 ---
 
 ---
+<br />
 
 Welcome to my _new blog_ about learning Astro! Here, I will share my learning journey as I build a new website.
 
