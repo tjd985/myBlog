@@ -2,6 +2,7 @@
 import type { HTMLAttributes } from 'astro/types';
 import type { InferEntrySchema } from 'astro:content';
 import PostImage from '@components/PostImage/PostImage.astro';
+import { destructDate } from '@utils/destructDate';
 
 interface Props extends HTMLAttributes<'article'> {
   postInfo: InferEntrySchema<'post'>;
@@ -10,16 +11,17 @@ interface Props extends HTMLAttributes<'article'> {
 
 const { postInfo, href, ...nativeArticleProps } = Astro.props;
 const { title, description, pubDate, thumbnail } = postInfo;
+const { year, month, date } = destructDate(pubDate);
 ---
 
 <a href={href}>
   <article {...nativeArticleProps}>
     <div class="max-w-[70%]">
-      <h1 class="text-2xl font-bold mb-[10px]">{title}</h1>
-      <p class="text-osh-grey mb-[20px] text-sm">{description}</p>
-      <p class="text-xs">{pubDate}</p>
+      <h1 class="card-title">{title}</h1>
+      <p class="card-description">{description}</p>
+      <p class="text-xs">{`${year}년 ${month}월 ${date}일 작성`}</p>
     </div>
-    <div class="w-[150px] h-[100px]">
+    <div class="thumbnail-wrapper">
       <PostImage
         class="image"
         src={thumbnail.src}

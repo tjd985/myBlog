@@ -1,5 +1,6 @@
 ---
 import { getCollection } from 'astro:content';
+import Header from '@components/Header.astro';
 import BaseLayout from '@layouts/BaseLayout.astro';
 import BlogCard from '@components/BlogCard/BlogCard.astro';
 
@@ -8,16 +9,19 @@ import '@styles/global.css';
 const allPosts = await getCollection('post');
 ---
 
-<BaseLayout pageTitle="HomePage">
-  <ul class="flex flex-col gap-[30px]">
-    {
-      allPosts.map((post) => (
-        <BlogCard
-          class="blog-card"
-          postInfo={post.data}
-          href={`/posts/${post.id}`}
-        />
-      ))
-    }
-  </ul>
+<BaseLayout>
+  <Header />
+  <section class="home">
+    <ul class="flex flex-col gap-[30px]">
+      {
+        allPosts.map((post) => (
+          <BlogCard
+            class="blog-card group"
+            postInfo={post.data}
+            href={`/posts/${post.id}`}
+          />
+        ))
+      }
+    </ul>
+  </section>
 </BaseLayout>

@@ -1,0 +1,10 @@
+---
+import type { HTMLAttributes } from 'astro/types';
+
+type NativeAnchorProps = HTMLAttributes<'a'>;
+interface Props extends NativeAnchorProps {}
+---
+
+<a {...Astro.props}>
+  <slot />
+</a>

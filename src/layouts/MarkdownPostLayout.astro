@@ -1,15 +1,27 @@
 ---
 import BaseLayout from './BaseLayout.astro';
+import { destructDate } from '@utils/destructDate';
+import type { FrontMatter } from '@type/FrontMatter';
+
+interface Props {
+  frontmatter: FrontMatter;
+}
 
 const { frontmatter } = Astro.props;
 const { title, pubDate, description } = frontmatter;
+const { year, month, date } = destructDate(pubDate);
 ---
 
 <BaseLayout>
-  <h1>{title}</h1>
-  <p>{description}</p>
-  <p>{pubDate}</p>
-  <slot />
+  <section class="px-[5%]">
+    <a href="/" class="font-bold p-[10px] inline-block">Go Back</a>
+    <section class="post-wapper">
+      <h1>{title}</h1>
+      <p>{description}</p>
+      <p>{`${year}년 ${month}월 ${date}일 작성`}</p>
+      <slot />
+    </section>
+  </section>
 </BaseLayout>
 
 <style>

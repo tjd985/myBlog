@@ -4,20 +4,28 @@
 @theme {
   --color-osh-white: #f1f5f9;
   --color-osh-grey: #999;
+  --color-osh-orange: #ffd8a8;
+  --color-osh-blue: #dbe4ff;
+  --color-osh-violet: #e5dbff;
   --font-pretendard: 'Pretendard', sans-serif;
 }
 
 @layer base {
   html {
-    @apply bg-osh-white;
+    @apply bg-osh-orange;
     @apply font-pretendard;
   }
 
   body {
-    @apply m-[0_auto];
     @apply w-full;
-    @apply max-w-[600px];
+    @apply h-full;
+  }
+
+  .home {
     @apply py-[100px];
+    @apply max-w-[700px];
+    @apply w-full;
+    @apply m-[0_auto];
   }
 }
 
@@ -30,6 +38,41 @@
     @apply bg-white;
     @apply p-[20px];
     @apply h-fit;
+    @apply hover:scale-[1.02];
+    @apply transition duration-150 ease-in-out;
+
+    .card-title {
+      @apply group-hover:text-blue-500;
+      @apply transition duration-150 ease-in-out;
+    }
+
+    .thumbnail-wrapper {
+      @apply w-[150px];
+      @apply h-[100px];
+    }
+  }
+
+  .post-wapper {
+    @apply bg-white;
+    @apply w-full;
+    @apply p-[30px];
+  }
+
+  .card-title {
+    @apply text-2xl;
+    @apply font-bold;
+    @apply mb-[10px];
+  }
+
+  .card-description {
+    @apply text-osh-grey;
+    @apply mb-[20px];
+    @apply text-sm;
+    @apply overflow-hidden;
+
+    display: -webkit-box;
+    -webkit-box-orient: vertical;
+    -webkit-line-clamp: 2;
   }
 }
 
