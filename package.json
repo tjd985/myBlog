@@ -13,6 +13,7 @@
     "@astrojs/rss": "^4.0.12",
     "@tailwindcss/vite": "^4.1.10",
     "astro": "^5.9.3",
+    "dayjs": "^1.11.13",
     "preact": "^10.26.9",
     "tailwindcss": "^4.1.10"
   },
