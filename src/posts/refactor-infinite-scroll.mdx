@@ -1,0 +1,257 @@
+---
+title: '무한스크롤 컴포넌트 개선기: SOLID 원칙을 적용한 관심사 분리'
+description: 'SOLID원칙을 준수한 컴포넌트 리팩토링을 통해 어떠한 한계를 극복했는지를 다룹니다.'
+pubDate: 2022-06-04
+thumbnail: { src: '/astro-logo.webp', alt: '아스트로 이미지' }
+---
+
+import SectionHeader from "@components/post/SectionHeader.astro";
+import SectionContent from "@components/post/SectionContent.astro"
+
+
+<SectionHeader>서론</SectionHeader>
+<SectionContent>
+  **무한스크롤 컴포넌트를 구현하다 보면, 종종 데이터 요청 로직과 UI가 지나치게
+  얽혀 있는 경우가 많습니다.** <br />
+  저희 팀에서도 처음에는 간단하게 API 경로를 넘겨서 사용할 수 있는 범용 무한스크롤
+  컴포넌트를 만들어 사용했지만, 시간이 지나면서 다양한 API 구조 변화에 매번
+  대응하는 일이 반복됐습니다.
+  <br />
+  이번 글에서는 **React Query와 관심사 분리를 통해**, 이런 구조적 한계를 어떻게
+  개선했는지 공유해보려 합니다.
+</SectionContent>
+
+<SectionHeader>무엇이 불편했는가?</SectionHeader>
+<SectionContent>
+  기존의 무한스크롤 컴포넌트는 `queryURL`만 넘겨주면 간편하게 사용할 수 있을 만큼, 추상화는 잘 되어 있는 편이었습니다.
+
+  하지만 내부적으로 ***너무 많은 역할을 담당*** 하고 있었고, ***각 기능들이 강하게 결합*** 되어 있다는 점에서 유지보수와 확장성 측면에서 불편함이 있었습니다.
+
+  <br />
+
+  ##### 무한스크롤 컴포넌트가 맡고 있던 기능들
+
+  <ul class="my-[5px]">
+    <li class='indent-[10px]'>• API 호출 시점 감지 및 트리거</li>
+    <li class='indent-[10px]'>• API 호출 로직 정의</li>
+    <li class='indent-[10px]'>• 페이지 파라미터 계산</li>
+    <li class='indent-[10px]'>• 로딩 인디케이터 렌더링</li>
+    <li class='indent-[10px]'>• 데이터 없음에 대한 fallback 컴포넌트 렌더링</li>
+    <li class='indent-[10px]'>• 버튼 기반 “더보기” 방식 렌더링</li>
+  </ul>
+
+  <br />
+
+  아래는 무한스크롤 컴포넌트 내부에서 API를 호출하는 코드의 예시 입니다.
+  ```tsx
+  const [nextPage, setNextPage] = useState(1);
+
+  const queryFn = async ({ pageParam = 1 }) => {
+    if (pageParam === 1) {
+      setStack([]);
+    }
+
+    try {
+      const res = await axios.get(queryURL, {
+        params: { page: pageParam, ...queryBody },
+      });
+
+      if (res.status === 200) {
+        if (res.data.data.meta.pageInfo) {
+          setNextPage(res.data.data.meta.pageInfo.page + 1);
+        }
+
+        return res.data.data;
+      }
+
+      if (res.status === 500) {
+        setErr(res.data.data);
+      }
+
+      throw new Error();
+    } catch (e) {
+      return undefined;
+    }
+  };
+  ```
+  이처럼 기존 컴포넌트는 `queryKey`, `queryURL`, `queryBody` 등의 파라미터를 받아 내부적으로 API 호출을 처리하는 구조였습니다.<br />
+  무한스크롤은 보통 **페이지 파라미터 기반**으로 데이터를 순차적으로 호출하는 방식이기 때문에, 그 파라미터가 핵심 키라고 볼 수 있습니다.<br />
+  그런데 문제는, 이 중요한 페이지 파라미터를 **컴포넌트 내부에서 직접 계산**하고 있었다는 점입니다.<br />
+  <br />
+  즉, API 응답에서 `page` 값을 찾아 +1을 더한 뒤, `nextPage`라는 상태로 관리하고 있었죠.<br />
+  이 구조의 가장 큰 문제는, 무한스크롤 컴포넌트가 사용하는 API의 응답 형식이 다음과 같이 **고정되어 있어야 한다는 것**입니다.<br />
+  <br />
+  `res.data.data.meta.pageInfo.page`
+
+  <br />
+
+  그러나 개발을 하다보면 API 스펙이 변경되거나, 응답 필드의 네이밍이 바뀌는 상황은 적지않게 마주하기 마련입니다.<br />
+  그런데 기존 구조에서는 이런 변화가 생기면 곧바로 무한스크롤이 동작하지 않게 됩니다. 그 이유는 컴포넌트가 API 응답에 강하게 의존하고 있기 때문입니다.<br />
+  결국, **무한스크롤 컴포넌트가 하위 모듈(API 응답)에 강하게 결합되어 있었고**,<br />
+  이는 **"상위 모듈(무한스크롤 컴포넌트)이 하위 모듈(API 응답 구조)에 의존하고 있는 구조"** 였습니다.<br />
+  이러한 구조는 `SOLID` 원칙 중 하나인 **“의존성 역전 원칙”** 을 위반한 구조이므로, 기존의 컴포넌트는 SOLID원칙에서 “단일 책임 원칙”과, “의존성 역전 원칙” 이렇게 두가지를 지키지 않은 구조라고 볼 수 있습니다.
+
+  > 🦖 `의존성 역전 원칙(DIP)`이란? <br />
+  > 상위 모듈은 하위 모듈에 의존하지 않아야 하며, 둘 다 추상화에 의존해야 한다는 원칙.
+
+</SectionContent>
+
+<SectionHeader>어떻게 개선했는가?</SectionHeader>
+<SectionContent>
+  이러한 문제를 해결하기 위해, SOLID 원칙 중 하나인 **의존성 역전 원칙**을 적용했습니다.<br />
+  기존에는 무한스크롤 컴포넌트가 어떤 API를 호출하는지, 페이지 파라미터를 어떻게 계산해야 하는지 등을 내부적으로 알고 있어야 했습니다.<br />
+  이를 개선하기 위해, API 호출과 페이지 파라미터 계산 로직을 **관심사 분리**를 통해 외부로 이전하고, 무한스크롤 컴포넌트는 오직 **데이터 fetch 함수를 호출하고, 트리거를 감지**하는 역할만 수행하도록 변경했습니다.
+
+  <br />
+  ##### 개선된 무한스크롤 컴포넌트
+
+  ```tsx
+  'use client';
+
+  import { ReactNode, useEffect, useRef } from 'react';
+
+  interface InfiniteScrollProps {
+    children: ReactNode;
+    hasNextPage?: boolean;
+    onFetchNextPage?: () => void;
+  }
+
+  export const InfiniteScroll = ({
+    children,
+    onFetchNextPage,
+    hasNextPage,
+  }: InfiniteScrollProps) => {
+    const triggerEl = useRef<HTMLDivElement>(null);
+
+    useEffect(() => {
+      if (!triggerEl.current) return;
+
+      const observer = new IntersectionObserver((entries) => {
+        if (!hasNextPage) {
+          observer.unobserve(triggerEl.current!);
+          return;
+        }
+
+        if (entries.some((entry) => entry.isIntersecting)) {
+          onFetchNextPage?.();
+        }
+      });
+
+      observer.observe(triggerEl.current);
+
+      return () => {
+        triggerEl.current && observer.unobserve(triggerEl.current);
+      };
+    }, [hasNextPage]);
+
+    return (
+      <>
+        {children}
+        <div ref={triggerEl} />
+      </>
+    );
+  };
+  ```
+
+  개선된 컴포넌트는 `children`과 감지용 `div`만 반환합니다. <br />
+  `children`은 외부에서 무한으로 렌더링해야 할 데이터를 의미하며, 그 아래 있는 `div`는 뷰포트에 진입했을 때 다음 데이터를 가져오기 위한 **IntersectionObserver 트리거**로 사용됩니다.<br />
+  이제 무한스크롤 컴포넌트는 API 구조에 직접 의존하지 않고, 외부에서 주입받은 추상화된 인터페이스에만 의존하므로 **의존성 역전 원칙**을 따르게 되었습니다.<br />
+  또한, 내부에 API fetch 트리거 로직만 남게 되면서 자연스럽게 단일 책임 원칙도 지킬 수 있게 되었습니다.<br />
+  무한스크롤 컴포넌트를 사용하는 쪽(상위 모듈)에서는 다음과 같이 구성됩니다.<br />
+
+  <br />
+  ##### 사용 예시 (상위 모듈)
+
+  ```tsx
+  export const LaunchingGoodsList = () => {
+    const [
+      launchingGoodsList,
+      metaData,
+      handleNextPage,
+      hasNextPage,
+      isFetchingNextPage,
+      isLoading,
+    ] = useInfiniteLaunchingGoods(filter.category.value, filter.order.value);
+
+    return (
+      <>
+        <InfiniteScroll
+          onFetchNextPage={handleNextPage}
+          hasNextPage={hasNextPage}
+          enable={enableInfiniteScroll}
+        >
+          <GoodsList />
+          {isFetchingNextPage && <ComponentLoading />}
+        </InfiniteScroll>
+
+        {!enableInfiniteScroll && (
+          <ViewMoreButton onClick={() => setEnableInfiniteScroll(true)} />
+        )}
+      </>
+    );
+  };
+  ```
+  위처럼 `useInfiniteLaunchingGoods`라는 커스텀 훅으로 무한스크롤의 구현체 비즈니스 로직을 분리해주었고 <br />
+  커스텀 훅은 내부적으로 `useInfiniteQuery`을 사용했습니다.
+
+  ```tsx
+  // useInfiniteLaunchingGoods.ts
+  const {
+    fetchNextPage,
+    hasNextPage,
+    isFetchingNextPage,
+    data,
+    isLoading
+  } = useInfiniteQuery({
+    queryKey: [
+      categoryValue,
+      orderType,
+    ],
+    queryFn: ({ pageParam = 1, queryKey }) => {
+      return getLaunchingGoods(pageParam, queryKey);
+    },
+    getNextPageParam: (lastPage) => {
+      const { page: currentPage, pages } = lastPage.meta.pageInfo!;
+
+      if (currentPage >= pages) {
+        return;
+      }
+
+      return currentPage + 1;
+    },
+  });
+  ```
+
+  `useInfiniteQuery`는 무한스크롤을 구현하는데 용이한 다양한 반환값들을 제공합니다.
+
+  그중에 제가 사용한 값들은 아래와 같습니다. (저희 팀은 React Query의 4.33.0 버전을 사용중이므로, 해당 버전 기준으로 설명하겠습니다.)
+  - • `fetchNextPage` : 다음 페이지를 호출하는 메서드
+  - • `hasNextPage` : 다음 페이지의 존재 여부
+  - • `isFetchingNextPage` : 다음 페이지를 가져오는 중인지 여부
+  - • `isLoading` : 첫 데이터를 불러오는 중인지 여부
+  - • `data` : 호출한 페이지의 API 응답
+
+  <br />
+  이렇게 구조를 재정의하고 나서 얻은 이점은 아래와 같았습니다.
+  <br />
+  - **재사용성과 이식성 향상** <br />
+  → 컴포넌트와 API 응답 구조 간의 강결합을 제거함으로써, 어떤 API든 외부에서 `onFetchNextPage`만 넘기면 동일한 방식으로 사용할 수 있습니다.
+  - **유지보수성 증가** <br />
+  → 하나의 컴포넌트가 여러 책임을 지던 구조에서 관심사를 분리함으로써, 각 모듈의 역할이 명확해지고 가독성과 유지보수성이 크게 향상되었습니다.
+
+   <br />
+  ##### 구조 개선 후 책임 분리
+  | 역할                | 책임                           |
+  | ------------------- | ------------------------------ |
+  | 외부 컴포넌트       | 로딩 UI, fallback, 더보기 버튼 |
+  | 커스텀 훅           | API 호출, 페이지 계산          |
+  | 무한스크롤 컴포넌트 | API 호출 트리거 감지           |
+</SectionContent>
+
+<SectionHeader>느낀점</SectionHeader>
+<SectionContent>
+  SOLID원칙은 소프트웨어를 더 견고하고, 유지 보수하기 쉽게 만들어 주며, 재사용성, 유연성 및 확장성을 고려한 코드를 작성하기 위한 원칙으로 잘 알려져 있는 패턴입니다. <br />
+  이론적으로는 이해하고 있었지만 실제로 어떻게 적용해야 하는지, 해당 원칙을 지켰을 때 얻는 이점들이 실제로 잘 와닿지는 않았는데요, <br />
+  결국 삽질을 해봐야 진짜 내 것이 **된다는 걸 다시 한 번 느꼈고..** <br />
+  사실 이번 개선 작업이 크게 무언가를 혁신적으로 개선하지는 않았다고 생각하는데요, 그래도 개인적으로 이론적인 부분을 어떻게 실무에 녹여내는지 에 대한 해답을 아주 조금은 알게 된 것 같아서 나름 많이 배운 것 같습니다. <br />
+</SectionContent>

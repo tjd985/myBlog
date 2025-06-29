@@ -10,18 +10,20 @@ const allPosts = await getCollection('post');
 ---
 
 <BaseLayout>
-  <Header />
-  <section class="home">
-    <ul class="flex flex-col gap-[30px]">
-      {
-        allPosts.map((post) => (
-          <BlogCard
-            class="blog-card group"
-            postInfo={post.data}
-            href={`/posts/${post.id}`}
-          />
-        ))
-      }
-    </ul>
-  </section>
+  <div class="home-wrapper">
+    <Header />
+    <section class="home">
+      <ul class="flex flex-col gap-[30px]">
+        {
+          allPosts.map((post) => (
+            <BlogCard
+              class="blog-card group"
+              postInfo={post.data}
+              href={`/posts/${post.id}`}
+            />
+          ))
+        }
+      </ul>
+    </section>
+  </div>
 </BaseLayout>

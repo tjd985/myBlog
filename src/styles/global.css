@@ -3,22 +3,105 @@
 
 @theme {
   --color-osh-white: #f1f5f9;
+  --color-osh-light-grey: #e9ecef;
   --color-osh-grey: #999;
   --color-osh-orange: #ffd8a8;
   --color-osh-blue: #dbe4ff;
   --color-osh-violet: #e5dbff;
+  --color-code-background: #656c7633;
   --font-pretendard: 'Pretendard', sans-serif;
 }
 
 @layer base {
   html {
-    @apply bg-osh-orange;
     @apply font-pretendard;
+    @apply w-full;
+    @apply h-full;
   }
 
   body {
     @apply w-full;
     @apply h-full;
+  }
+
+  h1 {
+    @apply text-5xl;
+    @apply font-bold;
+  }
+
+  h2 {
+    @apply text-4xl;
+    @apply font-bold;
+  }
+
+  h3 {
+    @apply text-3xl;
+    @apply font-bold;
+  }
+
+  h4 {
+    @apply text-2xl;
+    @apply font-bold;
+  }
+
+  h5 {
+    @apply text-xl;
+    @apply font-bold;
+  }
+
+  table {
+    @apply border-collapse;
+    @apply my-[15px];
+  }
+
+  th {
+    @apply bg-osh-light-grey;
+  }
+
+  th,
+  td {
+    @apply border-[1px];
+    @apply border-osh-grey;
+    @apply p-[10px];
+    @apply min-w-[150px];
+    @apply text-left;
+  }
+
+  pre {
+    @apply p-[20px];
+    @apply my-[20px];
+    @apply rounded-[10px];
+  }
+
+  pre::-webkit-scrollbar {
+    @apply hidden;
+  }
+
+  code {
+    @apply p-[0.2rem_0.4rem];
+    @apply bg-code-background;
+    @apply text-[85%];
+    @apply rounded-[6px];
+  }
+
+  pre code {
+    @apply p-0;
+    @apply text-inherit;
+    @apply bg-inherit;
+    @apply rounded-none;
+  }
+
+  blockquote {
+    @apply my-[15px];
+    @apply p-[15px];
+    @apply rounded-[10px];
+    @apply bg-osh-light-grey;
+  }
+
+  .home-wrapper {
+    @apply w-full;
+    @apply h-full;
+    @apply bg-osh-orange;
   }
 
   .home {
@@ -54,12 +137,14 @@
 
   .post-wapper {
     @apply bg-white;
-    @apply w-full;
-    @apply p-[30px];
+    @apply max-w-[800px];
+    @apply m-[0_auto];
+    @apply px-[30px];
+    @apply py-[50px];
   }
 
   .card-title {
-    @apply text-2xl;
+    @apply text-xl;
     @apply font-bold;
     @apply mb-[10px];
   }
