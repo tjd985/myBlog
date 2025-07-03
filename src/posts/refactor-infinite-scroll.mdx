@@ -1,7 +1,7 @@
 ---
 title: '무한스크롤 컴포넌트 개선기: SOLID 원칙을 적용한 관심사 분리'
 description: 'SOLID원칙을 준수한 컴포넌트 리팩토링을 통해 어떠한 한계를 극복했는지를 다룹니다.'
-pubDate: 2022-06-04
+pubDate: 2025-06-04
 thumbnail: { src: '/astro-logo.webp', alt: '아스트로 이미지' }
 ---
 
@@ -32,12 +32,12 @@ import SectionContent from "@components/post/SectionContent.astro"
   ##### 무한스크롤 컴포넌트가 맡고 있던 기능들
 
   <ul class="my-[5px]">
-    <li class='indent-[10px]'>• API 호출 시점 감지 및 트리거</li>
-    <li class='indent-[10px]'>• API 호출 로직 정의</li>
-    <li class='indent-[10px]'>• 페이지 파라미터 계산</li>
-    <li class='indent-[10px]'>• 로딩 인디케이터 렌더링</li>
-    <li class='indent-[10px]'>• 데이터 없음에 대한 fallback 컴포넌트 렌더링</li>
-    <li class='indent-[10px]'>• 버튼 기반 “더보기” 방식 렌더링</li>
+    <li class='indent-[10px]'>API 호출 시점 감지 및 트리거</li>
+    <li class='indent-[10px]'>API 호출 로직 정의</li>
+    <li class='indent-[10px]'>페이지 파라미터 계산</li>
+    <li class='indent-[10px]'>로딩 인디케이터 렌더링</li>
+    <li class='indent-[10px]'>데이터 없음에 대한 fallback 컴포넌트 렌더링</li>
+    <li class='indent-[10px]'>버튼 기반 “더보기” 방식 렌더링</li>
   </ul>
 
   <br />
@@ -225,11 +225,13 @@ import SectionContent from "@components/post/SectionContent.astro"
   `useInfiniteQuery`는 무한스크롤을 구현하는데 용이한 다양한 반환값들을 제공합니다.
 
   그중에 제가 사용한 값들은 아래와 같습니다. (저희 팀은 React Query의 4.33.0 버전을 사용중이므로, 해당 버전 기준으로 설명하겠습니다.)
-  - • `fetchNextPage` : 다음 페이지를 호출하는 메서드
-  - • `hasNextPage` : 다음 페이지의 존재 여부
-  - • `isFetchingNextPage` : 다음 페이지를 가져오는 중인지 여부
-  - • `isLoading` : 첫 데이터를 불러오는 중인지 여부
-  - • `data` : 호출한 페이지의 API 응답
+  <ul>
+    <li>`fetchNextPage` : 다음 페이지를 호출하는 메서드</li>
+    <li>`hasNextPage` : 다음 페이지의 존재 여부</li>
+    <li>`isFetchingNextPage` : 다음 페이지를 가져오는 중인지 여부</li>
+    <li>`isLoading` : 첫 데이터를 불러오는 중인지 여부</li>
+    <li>`data` : 호출한 페이지의 API 응답</li>
+  </ul>
 
   <br />
   이렇게 구조를 재정의하고 나서 얻은 이점은 아래와 같았습니다.
