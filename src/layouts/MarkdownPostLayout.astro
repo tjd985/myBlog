@@ -2,18 +2,27 @@
 import BaseLayout from './BaseLayout.astro';
 import { destructDate } from '@utils/destructDate';
 import type { FrontMatter } from '@type/FrontMatter';
+import PostImage from '@components/PostImage/PostImage.astro';
 
 interface Props {
   frontmatter: FrontMatter;
 }
 
 const { frontmatter } = Astro.props;
-const { title, pubDate, description } = frontmatter;
+const { title, pubDate, description, thumbnail } = frontmatter;
 const { year, month, date } = destructDate(pubDate);
 ---
 
 <BaseLayout>
   <section class="post-wapper">
+    <div class="w-full mb-[80px]">
+      <PostImage
+        class="image"
+        src={thumbnail.src}
+        alt={thumbnail.alt}
+        objectFit="cover"
+      />
+    </div>
     <div class="mb-[50px] border-b-[1px] border-black flex flex-col gap-[15px]">
       <h2>{title}</h2>
       <p class="text-osh-grey">{description}</p>
