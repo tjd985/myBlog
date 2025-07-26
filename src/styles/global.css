@@ -167,7 +167,19 @@
 }
 
 @layer utilities {
+  .flex-row-center-center {
+    @apply flex justify-center items-center;
+  }
+
+  .flex-col-center-center {
+    @apply flex flex-col justify-center items-center;
+  }
+
   .text-xs {
     @apply text-[12px];
+  }
+
+  .text-sm {
+    @apply text-[14px];
   }
 }

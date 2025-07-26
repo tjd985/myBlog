@@ -1,0 +1,250 @@
+---
+title: 'reflow의 지옥에서 탈출하기'
+description: '스크롤 시 top 속성 사용으로 인해 발생하던 reflow와 프레임 드랍 문제를 transform 기반 방식으로 수정하여 렌더링 성능을 개선해 본 경험을 다룹니다.'
+pubDate: 2025-07-06
+thumbnail:
+  { src: '/performance_optimize/reflow_optimize_thumbnail.webp', alt: 'reflow 최적화 썸네일' }
+---
+
+import SectionHeader from '@components/post/SectionHeader.astro';
+import SectionContent from '@components/post/SectionContent.astro';
+import PostImage from "@components/PostImage/PostImage.astro";
+import ImageBackground from "@components/ImageBackground/ImageBackground.astro"
+
+<SectionContent>
+  해당 글은 성능이 낮은 기기에서 발생한 프레임 드랍 현상을 개선한 과정을 기록한
+  글입니다.
+</SectionContent>
+
+<SectionHeader>개요</SectionHeader>
+<SectionContent>
+  이 최적화 작업은 **저사양 모바일 기기에서 서비스 작동을 테스트하던 중**, <br />
+  **특정 UI 요소가 움직일 때 눈에 띄게 버벅이는 현상**을 발견하면서 시작됐습니다.
+
+  <ImageBackground
+    altText='(출처: 크롬 런타임 성능 분석 공식문서)'
+  >
+    <PostImage
+      src='/performance_optimize/chrome_performance_test.webp'
+      alt='크롬 저사양 기기 퍼포먼스 측정법'
+      objectFit="cover"
+    />
+  </ImageBackground>
+
+  <br />
+  <br />
+
+  <ImageBackground altText='스크롤 방향에 따라서 요소의 위치가 변화하며, 무한스크롤이 적용된 페이지'>
+    <div class='w-[40%]'>
+      <PostImage
+        src='/performance_optimize/problem_page.webp'
+        alt='대 카테고리 페이지'
+        objectFit="cover"
+      />
+    </div>
+  </ImageBackground>
+  문제가 발생했던 해당 페이지는 무한스크롤 기반으로, <br />
+  사용자가 스크롤을 내릴수록 상품이 지속적으로 로드되는 구조입니다. <br />
+  여기서 **상단 카테고리 탭, 하단 GNB, 모바일 필터, 스크롤 이동 버튼** 등은 **스크롤 방향에 따라 위치가 변동되는 UI 요소**들입니다.
+
+  <ImageBackground>
+    <div class='w-full flex justify-center'>
+      <PostImage
+        src='/performance_optimize/explain.webp'
+        alt='라운드탭 설명'
+        objectFit="cover"
+      />
+    </div>
+  </ImageBackground>
+
+  하지만 상품이 많이 쌓인 상태에서 스크롤을 빠르게 올리거나 내리는 행위를 반복할 경우 <br />
+  이러한 UI 요소들의 위치 변경 로직으로 인해 `reflow`**가 빈번하게 발생했고**, <br />
+  이는 **데스크탑 환경에서는 크게 문제되지 않았지만, 일부 저사양 모바일 기기에서는 눈에 띄는 프레임 드랍**을 유발했습니다.
+
+  <ImageBackground
+    altText='버벅거리는 상단 카테고리 탭, 하단 GNB, 모바일 필터, 스크롤 이동 버튼'
+  >
+    <div class='w-[40%]'>
+      <PostImage
+        src='/performance_optimize/mobile_rendering_problem.gif'
+        alt='프레임 드랍 gif'
+        objectFit="cover"
+      />
+    </div>
+  </ImageBackground>
+
+  저희 서비스를 이용하시는 분들의 주 연령대가 30~50대라는 점을 고려할 때<br />
+  성능이 낮은 기기를 사용하는 사용자도 적지 않을 것이라 판단했고, 이는 곧 **사용자 경험 저하**로 이어질 수 있다는<br />문제의식으로 이어졌습니다.
+</SectionContent>
+
+<SectionHeader>원인 분석</SectionHeader>
+<SectionContent>
+  버벅임의 원인을 정밀하게 확인하기 위해, **크롬 개발자 도구의 Performance 탭을 활용해 성능 측정을 진행**했습니다.
+  <br />
+  **테스트 환경**
+  - 크롬 시크릿 모드
+  - 로컬 환경
+  - CPU 20배 감속 (CPU Throttling: 20x 설정)
+  - 동일한 스크롤 패턴 (위/아래 15회 반복)
+
+  <ImageBackground>
+    <PostImage
+      src='/performance_optimize/before_optimize_layout_shift.gif'
+      alt='개선 전 테스트 gif'
+      objectFit="cover"
+    />
+  </ImageBackground>
+
+  퍼포먼스를 측정하고, 해당 결과에서 프레임 드랍이 발생한 지점을 살펴보면 **두가지 특징**들을 찾을 수 있었습니다.
+  <ol class='my-[20px]'>
+    <li>1. `reflow` 및 `repaint` **작업이 과도할정도로 빈번하게 발생됨**</li>
+    <li>2. **CPU 사용률이 높아, 일부 애니메이션 프레임이 렌더링되지 못하고 건너뛰어짐(frame drop)**</li>
+  </ol>
+  <ImageBackground
+    altText='개선 전 performance 테스트 결과'
+  >
+    <PostImage
+      src='/performance_optimize/before_test_result.webp'
+      alt='개선 전 테스트 결과'
+      objectFit="cover"
+    />
+  </ImageBackground>
+  특히 드랍된 프레임이 발생한 애니메이션의 공통점은 모두 `top` 또는 `bottom` 값 변경에 의해 위치가 이동되는 형태라는 것 이었습니다.
+</SectionContent>
+
+<SectionHeader>이게 왜 문제인가</SectionHeader>
+<SectionContent>
+  `width`, `height`, `left`, `top`와 같은 '기하학적 속성'을 변경하는 것은 모두 reflow를 유발합니다. <br />
+  이 과정에서 브라우저는 DOM 요소들의 위치와 크기를 **다시 계산하고**, 화면에 다시 그려주어야(`repaint`) 하기 때문에 **CPU의 부담이 큽니다**. <br />
+  이러한 reflow가 스크롤 위치가 바뀌는 순간마다 발생하고 있었기 때문에,
+  js가 메인 스레드(CPU)에서 돌아가고 있을 때, top값을 수정하게되면 메인스레드의 병목이 증가함에 따라서 <br />
+  **애니메이션이 건너뛰어지거나, 정상적으로 처리되지 못하고 버벅이는 현상이 발생**했던 것 입니다.
+</SectionContent>
+
+<SectionHeader>해결 방안</SectionHeader>
+<SectionContent>
+  따라서  기존에 top이나 bottom속성을 이용해 위치를 조정하던 애니메이션을 `translate`로 수정 했습니다. <br />
+  그 이유는 다음과 같습니다.
+  <ol class='my-[20px]'>
+    <li>1. `translate`는 기하학적 속성을 변경하지 않기 때문에 reflow를 유발하지 않음</li>
+    <li>2. `translate`는 reflow를 유발하지 않기 때문에 composite(합성)만으로 처리가 가능하고, 이는 GPU에서 처리할 수 있음</li>
+    <li>3. 따라서 CPU로부터 독립적으로 처리 되기때문에 CPU 부하가 줄고, GPU를 통한 부드러운 애니메이션 처리 가능</li>
+    <li>4. 프레임 드랍이 사라지고 요소들의 애니메이션이 훨씬 부드러워짐</li>
+  </ol>
+
+  다만, `top` 값을 `translate`로 대체하는 과정에서 **한 가지 어려움이 있었습니다.** <br />
+  기존에는 해당 요소에 `position: sticky`가 적용된 상태에서, **스크롤 방향에 따라 `top` 값을 동적으로 변경**해
+  요소가 **뷰포트 상단에 도달하는 시점부터 자연스럽게 숨겨졌다가 다시 나타나는 효과**를 구현하고 있었습니다. <br />
+  하지만 `translate` 방식으로 전환하면서는, **해당 요소가 현재 `sticky` 상태로 상단에 고정되어 있는지를 판단하기가 어려웠습니다.**
+  <br />
+  이는 `top` 값을 기준으로는 비교적 명확하게 제어할 수 있었던 부분이지만, `transform`은 실제 레이아웃 위치를 변경하지 않기 때문에 **뷰포트와의 상대적인 위치 판별이 까다로웠습니다.** <br />
+  이를 해결하기 위해서 처음엔 아래와 같이 접근해서 구현을 했습니다.
+  ```tsx
+    // 첫 접근 로직
+
+    const getRoundTabY = () => {
+      const currentY = roundTabEl.current.getBoundingClientRect().y;
+
+      // 타겟 요소의 위치를 스크롤마다 가져와서 설정해둔 임계점보다 위로 지나는 순간 클래스네임 추가
+      if (currentY <= stickyMargin) {
+        roundTabEl.current.classList.add(className);
+
+        return;
+      }
+
+      // 타겟 요소의 위치를 스크롤마다 가져와서 설정해둔 임계점보다 아래로 지나는 순간 클래스네임 제거
+      roundTabEl.current.classList.remove(className);
+    };
+
+    useEffect(() => {
+        window.addEventListener('scroll', getRoundTabY);
+
+        return () => {
+            window.removeEventListener('scroll', getRoundTabY);
+        };
+    }, []);
+  ```
+  해당 방법은 `getBoundingClientRect().y` 값을 기준으로, 요소가 뷰포트 상단(sticky 기준 위치)에 도달했는지를 판단했고, 그 시점을 기준으로 `className`을 토글하여 요소가 **숨겨졌다 나타나는 전환 효과**를 유지할 수 있었습니다. <br /><br />
+  이 방식은 직관적이고 동작은 잘 되었지만, 스크롤이 빠르게 움직이거나 연속적으로 발생할 경우 **성능에 부담이 될 수 있는 구조**였습니다.
+
+  그래서 매 스크롤마다 해당 위치를 가져오지않고, ***"특정 위치를 지나는 순간만 감지할 수 있다면, 그 시점에만 className을 토글해주는 것으로도 동일한 효과를 얻을 수 있지 않을까?"*** 라고 생각 했습니다.
+
+  이를 위해서 `intersectionObserver`를 활용한 방식으로 수정했습니다.
+  <br />
+  ```tsx
+    // intersectionObserver를 활용하여 개선한 로직
+
+    useEffect(() => {
+      const intersectionObserver = new IntersectionObserver(
+        (entries) => {
+          entries.forEach((entry) => {
+            if (!roundTabEl.current) {
+              return;
+            }
+
+            // 타겟 요소가 특정 임계점을 지나는 순간 스크롤 방향이 "DOWN"이라면 클래스네임 추가
+            if (entry.isIntersecting && currentScrollDirection.current === 'DOWN') {
+              roundTabEl.current.classList.add(className);
+
+              return;
+            }
+
+            // 타겟 요소가 특정 임계점을 지나는 순간 스크롤 방향이 "UP"이라면 클래스네임 제거
+            if (!entry.isIntersecting && currentScrollDirection.current === 'UP') {
+              roundTabEl.current.classList.remove(className);
+            }
+          });
+        },
+        {
+          // 임계점 설정
+          rootMargin: `0px 0px -${rootMargin}px 0px`,
+        }
+      );
+
+      if (roundTabEl.current) {
+        intersectionObserver.observe(roundTabEl.current);
+      }
+
+      return () => {
+        intersectionObserver.disconnect();
+      };
+    }, []);
+  ```
+  `rootMargin`이라는 변수(요소가 교차해야 하는 지점이 상단으로부터 몇 px떨어져 있는지를 갖는 값)을 활용하여, 요소가 교차하는 시점을 감지하고,<br />
+  교차하는 시점에 스크롤 방향이 아래(DOWN)일 경우 `className`을 추가, 스크롤 방향이 위(UP)일 경우(교차 영역에서 벗어났을 경우) `className`을 제거하는 방식으로 로직을 단순화 시켰습니다.
+  <br />
+  해당 방식은 매 스크롤마다 요소의 위치를 실시간으로 확인하지 않아도 되고, 특정 위치를 통과했는지만 감지하면 되기 때문에 성능적으로도 훨씬 **가볍게** 구현할 수 있었습니다.
+  <br />
+  그리고 개선 후 동일한 테스트 환경에서 다시 측정해 본 결과
+
+  <ImageBackground>
+      <PostImage
+        src='/performance_optimize/after_optimize_layout_shift.gif'
+        alt='개선 후 테스트 gif'
+        objectFit="cover"
+      />
+  </ImageBackground>
+
+  이전과는 달리 눈에 띄게 버벅임이 줄어든 모습을 확인할 수 있고, 우측 퍼포먼스 탭의 **'레이아웃 변경'** 에 아무것도 포착되지 않는 모습을 볼 수 있었습니다.
+  <br />
+  이후, 퍼포먼스 측정의 결과를 확인해보니
+
+  <ImageBackground altText='개선 후 performance 테스트 결과'>
+    <PostImage
+      src='/performance_optimize/after_test_result.webp'
+      alt='개선 후 테스트 결과'
+      objectFit="cover"
+    />
+  </ImageBackground>
+
+  이전에 반복적으로 발생하던 `reflow`가 전부 사라졌고, **렌더링되지 못하고 건너뛰어지던 애니메이션 프레임들이** 크게 줄었습니다.
+</SectionContent>
+
+<SectionHeader>느낀점</SectionHeader>
+<SectionContent>
+  사실 크롬에서 performance나 rendering과 같은 기능들은 제대로 사용해본적이 없었는데, 이번 기회에 성능 측정을 통해 디버깅도 해보고, 공부해볼 수 있는 기회가 되어서 좋았습니다. <br />
+  이론적으로 ***"reflow는 나쁘다", "비용이 많이 들어서 피해야 한다"*** 라고 이론적으로는 알고있었지만 <br />
+  실제로 비용이 많이 들면 어떤점에서 악영향을 끼치는지, 유저의 입장에서 어떤 부분이 문제가 될 수 있는지는 잘 모르고 있었다는걸 느꼈습니다. <br /><br />
+  실제로 top 과 같은 속성을 남용했을 때 발생할 수 있는 렌더링 병목은 흔하지만, <br />
+  **크롬 개발자 도구의 performance를 적극 활용하면 원인을 빠르게 식별하고 개선할 수 있습니다.**
+</SectionContent>

@@ -1,0 +1,18 @@
+---
+interface Props {
+  altText?: string;
+}
+
+const { altText } = Astro.props;
+---
+
+<div
+  class="w-full flex-col-center-center my-[30px] p-[20px] bg-osh-light-grey rounded-[20px]"
+>
+  <slot />
+  {
+    !!altText && (
+      <span class="text-sm text-osh-grey italic mt-[20px]">{altText}</span>
+    )
+  }
+</div>
