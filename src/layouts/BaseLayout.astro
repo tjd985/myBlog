@@ -1,5 +1,6 @@
 ---
 import '@styles/global.css';
+import GAHeader from '@components/Provider/GoogleAnaltyics/GAHeader.astro';
 ---
 
 <html lang="ko">
@@ -9,6 +10,9 @@ import '@styles/global.css';
     <meta name="viewport" content="width=device-width" />
     <meta name="generator" content={Astro.generator} />
     <title>seongho's blog</title>
+
+    <!-- Google tag (gtag.js) -->
+    <GAHeader />
   </head>
   <body>
     <slot />
