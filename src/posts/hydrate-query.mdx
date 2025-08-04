@@ -1,0 +1,419 @@
+---
+title: 'React Query 데이터, 서버에서 받아오기(feat.초기 렌더 전략에 대한 고찰)'
+description: 'React Query를 사용할 때의 초기데이터를 prefetch해오는 방법과, 이에 따른 고찰을 다룹니다.'
+pubDate: 2025-08-01
+thumbnail: { src: '/hydrate-query/hydrate-query-thumbnail.webp', alt: 'hydrate-query 썸네일' }
+---
+
+import SectionHeader from '@components/post/SectionHeader.astro';
+import SectionContent from '@components/post/SectionContent.astro';
+import PostImage from "@components/PostImage/PostImage.astro";
+import ImageBackground from "@components/ImageBackground/ImageBackground.astro"
+
+<SectionContent>
+  해당 글은 `@tanstack/react-query@4` 버전을 기준으로 작성되었습니다.
+</SectionContent>
+
+<SectionHeader>
+  개요
+</SectionHeader>
+<SectionContent>
+  Next.js를 사용하다 보면 서버 컴포넌트와 클라이언트 컴포넌트를 자주 마주치게 됩니다. <br />
+  그리고 `tanstack-query`(이하 `리액트 쿼리`)는 이러한 환경에서 서버 상태를 효과적으로 관리할 수 있게 해주는 강력한 도구입니다. <br />
+  최근 리액트 쿼리를 활용해 실무 작업을 하다 `queryClient`를 사용해 데이터를 서버에서 미리 `prefetch`한 뒤, 클라이언트에 `Hydrate`를 통해 전달하는 방법을 경험하면서 관심이 생겼고, <br />
+  이에 따라서 개인적으로 초기 데이터를 빠르게 사용자에게 보여주는 UX 개선 전략을 직접 실험해보게 되었습니다.
+</SectionContent>
+
+<SectionHeader>
+  서버에서 데이터를 받아오는 방법
+</SectionHeader>
+<SectionContent>
+  보통 일반적인 방법으로 리액트 쿼리를 사용하면 다음과 같은 흐름으로 동작합니다.
+
+  <ol class='my-[20px]'>
+    <li>**1. 클라이언트 컴포넌트가 마운트됨**</li>
+    <li>**2. `useQuery`를 통해 데이터 fetch 시작**</li>
+    <li>**3. 데이터 응답이 오면 UI를 렌더링**</li>
+  </ol>
+
+  즉, 컴포넌트가 마운트된 이후에 데이터를 요청하게 되며, 그 사이에는 로딩 인디케이터를 보여주게 됩니다. <br />
+  그러나 리액트 쿼리는 서버에서 데이터를 `prefetch`하고 이를 클라이언트에 전달하는 **두 가지 방법**을 지원합니다.
+
+  <br />
+
+  **1. `initialData`로 전달하는 방식** <br />
+  서버에서 데이터를 fetch한 뒤, `useQuery`의 `initialData` 옵션을 통해 전달하는 방식입니다. <br />
+  간단한 구조지만, 컴포넌트 깊이가 깊어질수록 **props drilling** 문제가 발생하고, 여러 위치에서 데이터를 재사용하려면 번거로울 수 있습니다.
+
+  <br />
+
+  **2. `Hydrate`를 활용한 방식** <br />
+  리액트 쿼리의 `Hydrate` 컴포넌트를 활용해 서버에서 데이터를 prefetch하고, 이를 클라이언트에서 hydrate하는 방식입니다. <br />
+  이 방식은 다음과 같은 **장점**이 있습니다.
+  <ul class='my-[20px]'>
+    <li>여러 쿼리를 서버에서 한번에 prefetch 가능</li>
+    <li>`props drilling` 없이 어디서든 `useQuery`로 데이터 접근 가능</li>
+  </ul>
+
+  다만, **별도의 추가적인 설정이 필요하다는 단점**도 있습니다.
+
+  <br />
+
+  저는 동일한 초기 데이터를 여러 컴포넌트에서 재사용해야 했고,
+  컴포넌트의 depth 또한 얕지 않았기 때문에, 초기 데이터를 필요로하는 컴포넌트들에게 전부 props를 통해서 초기 데이터를 전달해주기에는 무리가 있어 두번째 방법인 `Hydrate방식`을 사용했습니다.
+</SectionContent>
+
+<SectionHeader>
+  사용법을 알아보자
+</SectionHeader>
+<SectionContent>
+  ```tsx
+  // page.tsx
+
+  import { TestComponent } from "@/component/TestComponent";
+  import { HydrateQuery } from "@/component/HydrateQuery";
+
+  const Home = async () => {
+    return (
+      <HydrateQuery>
+        <TestComponent />
+      </HydrateQuery>
+    );
+  };
+
+  export default Home;
+  ```
+
+  <br />
+
+  `HydrateQuery` 컴포넌트는 다음과 같은 구조로 작성됩니다.
+  ```tsx
+  // HydrateQuery.tsx
+
+  import { Hydrate, dehydrate } from "@tanstack/react-query";
+  import { getQueryClient } from "@/module/getQueryClient";
+  import { getData } from "@/module/getData";
+  import { ReactNode } from "react";
+
+  export const HydrateQuery = async ({ children }: { children: ReactNode }) => {
+    const queryClient = getQueryClient();
+
+    await queryClient.prefetchQuery({
+      queryKey: ["posts", 1],
+      queryFn: () => {
+        return getData(1);
+      },
+      cacheTime: 5 * 60 * 1000,
+      staleTime: 5 * 60 * 1000,
+    });
+
+    const dehydratedState = dehydrate(queryClient);
+
+    return <Hydrate state={dehydratedState}>{children}</Hydrate>;
+  };
+  ```
+  HydrateQuery내부에서는 queryClient를 통해서 prefetch하고자 하는 데이터를 호출하고, 해당 결과를 `dehydrate`라는 함수를 통해서 정적인 데이터로 변환을 시킵니다. <br />
+  이후 해당 정적 데이터를 Hydate라는 컴포넌트의 state props로 전달하고,
+  Hydrate컴포넌트로 초기 데이터를 사용하고자 하는 컴포넌트를 감싸주는 형태로 작성하면 됩니다.
+
+  <br />
+
+  그리고 TestComponent에서 별도의 데이터 페칭 작업 없이 `queryClient`를 가져와서 확인해보면
+  ```tsx
+  // TestComponent.tsx
+
+  "use client";
+
+  import { useQueryClient } from "@tanstack/react-query";
+
+  export const TestComponent = () => {
+    const queryClient = useQueryClient();
+
+    console.log(queryClient);
+
+    return (
+      <div>
+        Hello
+      </div>
+    );
+  };
+  ```
+  <ImageBackground
+    altText='queryClient에 캐싱되어 있는 모습'
+  >
+    <div class='w-[80%]'>
+      <PostImage
+        src='/hydrate-query/query-cache.webp'
+        alt='쿼리 클라이언트 캐싱 이미지'
+        objectFit="cover"
+      />
+    </div>
+  </ImageBackground>
+  useQuery를 별도로 호출하지 않았음에도 서버에서 prefetch를 해둔 데이터가 `queryClient`에 캐싱에 되어져 있는것을 확인할 수 있습니다.
+
+  <br />
+
+  이에 따라서 아래와 같이 서버에서 prefetch를 해둔 `동일한 쿼리 키`를 사용해서 데이터를 가져온다면 사용자에게 초기 `로딩 스피너`나, `fallBack`없이 첫 데이터를 바로 보여줄 수 있습니다. 🙌🏻
+  ```tsx
+  // TestComponent.tsx
+
+  "use client";
+
+  import { useState } from "react";
+  import { useQuery } from "@tanstack/react-query";
+  import { getData } from "@/module/getData";
+
+  export const TestComponent = () => {
+    const [page, setPage] = useState(1);
+
+    const { data, isLoading } = useQuery({
+      queryKey: ["posts", page], // prefetch한 쿼리 키와 동일한 key 사용
+      queryFn: ({ queryKey }) => {
+        const pageParam = queryKey[1];
+
+        return getData(pageParam);
+      },
+      cacheTime: 5 * 60 * 1000,
+      staleTime: 5 * 60 * 1000,
+      enabled: true,
+    });
+
+    if (isLoading) {
+      return <div>로딩중입니다</div>;
+    }
+
+    return (
+      <div>
+        <h1>{data?.title ?? "타이틀"}</h1>
+        <span>{data?.body ?? "바디"}</span>
+        <button
+          onClick={() => {
+            setPage((prev) => prev + 1);
+          }}
+        >
+          {page}
+        </button>
+      </div>
+    );
+  };
+  ```
+</SectionContent>
+
+<SectionHeader>
+  데이터 fetching 테스트(서버 fetch vs 클라이언트 fetch)
+</SectionHeader>
+<SectionContent>
+  그렇다면 이렇게 서버에서 미리 데이터를 받아오는 방식이 **무조건 좋은 선택일까요?** <br />
+  문득 이러한 생각이 들었습니다.
+
+  <br />
+
+  ***“서버컴포넌트에서 첫 데이터를 fetching하게 되면 사실상 TTFB가 더 느려지는 것 아닐까? <br />
+  그렇게 되면 클라이언트에서 데이터를 fetching해서 첫 데이터를 그리는 것과 크게 다를것 같지는 않은데.. <br />
+  오히려 클라이언트에서 데이터를 fetching하면 `fallBack`을 보여줄 수도 있으니까 사용자 경험적인 측면에서 더 좋지 않을까?”***
+
+  <br />
+
+  이를 위해서 간단하게 `express`와 `Next.js`를 이용해서 서버와 클라이언트를 구축한 뒤,
+  <ol class='my-[20px]'>
+    <li>**1. 클라이언트 컴포넌트에서 데이터를 fetching하여 받아서 렌더링하는 경우 (이하 `CSR 방식`)**</li>
+    <li>**2. Hydrate를 통해 서버 컴포넌트에서 데이터를 fetching하여 렌더링하는 경우 (이하 `Hydrate 방식`)**</li>
+  </ol>
+
+  두개의 케이스를 비교해보았습니다.
+
+  <br />
+
+  테스트 환경은 아래와 같습니다.
+  - 로컬호스트 환경
+  - Express 서버에서 `jsonplaceholder` API를 중계하고, 응답을 **3초 딜레이**
+  - Next.js 페이지에서 각각 Hydrate 방식과 CSR 방식을 구현
+
+  <br />
+  <br />
+
+  ***서버 코드***
+  ```tsx
+  // Express 서버 (응답 3초 지연)
+
+  const express = require("express");
+
+  const router = express.Router();
+
+  router.get("/:postId", (req, res, next) => {
+    const { postId } = req.params;
+
+    // 테스트용 API
+    fetch(`https://jsonplaceholder.typicode.com/posts/${postId}`)
+      .then((response) => {
+        if (!response.ok) {
+          throw new Error();
+        }
+
+        return response.json();
+      })
+      .then((result) => {
+        setTimeout(() => {
+          res.json(result);
+        }, 3000);
+      })
+      .catch((err) => {
+        next(err);
+      });
+  });
+
+  module.exports = router;
+  ```
+
+  <br />
+  <br />
+
+  ***CSR 방식***
+  ```tsx
+  // page.tsx
+
+  import { TestComponent } from "@/component/TestComponent";
+
+  const Home = async () => {
+    return <TestComponent />;
+  };
+
+  export default Home;
+
+  ```
+
+  ***Hydrate 방식***
+  ```tsx
+  // page.tsx
+
+  import { TestComponent } from "@/component/TestComponent";
+  import { HydrateQuery } from "@/component/HydrateQuery";
+
+  const Home = async () => {
+    return (
+      <HydrateQuery>
+        <TestComponent />
+      </HydrateQuery>
+    );
+  };
+
+  export default Home;
+  ```
+
+  <br />
+
+  ***테스트 클라이언트 컴포넌트***
+  ```tsx
+  // TestComponent.tsx
+
+  "use client";
+
+  import { useState } from "react";
+  import { useQuery } from "@tanstack/react-query";
+  import { getData } from "@/module/getData";
+
+  export const TestComponent = () => {
+    const [page, setPage] = useState(1);
+
+    const { data, isLoading, isFetching } = useQuery({
+      queryKey: ["posts", page],
+      queryFn: ({ queryKey }) => {
+        const pageParam = queryKey[1];
+
+        return getData(pageParam);
+      },
+      cacheTime: 5 * 60 * 1000,
+      staleTime: 5 * 60 * 1000,
+      enabled: true,
+    });
+
+    if (isLoading) {
+      return <div>로딩중입니다</div>;
+    }
+
+    return (
+      <div>
+        <h1>{data?.title ?? "타이틀"}</h1>
+        <span>{data?.body ?? "바디"}</span>
+        <button
+          onClick={() => {
+            setPage((prev) => prev + 1);
+          }}
+        >
+          {page}
+        </button>
+      </div>
+    );
+  };
+  ```
+
+  우선 표면적으로 보여지는 결과는 다음과 같았습니다. <br /><br />
+  ***`CSR 방식`에서는 먼저 “로딩중입니다” 문구가 뜨고, 3초 뒤 콘텐츠가 렌더링되며, <br />
+  `Hydrate 방식`에서는 3초 후에 완성된 콘텐츠가 한 번에 나타났습니다.***
+
+  <br />
+
+  조금 더 자세한 차이점을 도출해내기 위해서 크롬에서 `LightHouse`를 진행해보았습니다. <br />
+  결과는 아래와 같았습니다.
+
+  <ImageBackground
+    altText='CSR방식(좌)과 Hydrate방식(우)의 LightHouse 결과'
+  >
+    <div class='w-[90%]'>
+      <PostImage
+        src='/hydrate-query/lighthouse.webp'
+        alt='lighthouse결과 이미지'
+        objectFit="cover"
+      />
+    </div>
+  </ImageBackground>
+  다른 부분은 전부 같았지만 `performance`점수에서 다른 결과를 확인할 수 있었습니다.
+
+  | 구분 | FCP | LCP | TBT |
+  | --- | --- | --- | --- |
+  | ***클라이언트 fetch 방식*** | 0.2s (동일) | **3.9s** | 0.2s (동일) |
+  | ***Hydrate방식*** | 0.2s (동일) | **0.4s** | 0.2s (동일) |
+
+  CSR방식이 Hydrate방식보다 LCP가 매우 늦게 측정되는 것을 볼 수 있습니다. <br />
+  사실 이렇게까지 차이가 나는것은 LightHouse의 측정 방식때문인데요. <br />
+  LightHouse의 LCP는 `HTML 응답 이후`에 화면에 "실제 큰 콘텐츠가 그려진 시간"을 측정하기 때문입니다. <br />
+  그렇기 때문에 3초가 걸리는 API를 `RSC`에서 호출하게 되면 `RSC`는 해당 응답을 기다린 뒤 document응답을 보내게 되고, 그때는 이미 컨텐츠가 완성된 상태로 오기 때문에 LCP가 굉장히 빠르게 측정됩니다.
+
+   <br />
+
+  제가 생각하는 RSC를 사용했을 때의 주요 장점은 다음과 같습니다. <br />
+  <ol class='my-[20px]'>
+    <li>**1. 번들 크기 최적화 :** 클라이언트 JS의 양이 줄어들기 때문에 성능에 긍정적인 영향을 줍니다.</li>
+    <li>**2. 초기 렌더에 의미 있는 콘텐츠를 바로 제공할 수 있음 :** 사용자에게 빠른 피드백을 제공하여 UX를 향상시킬 수 있습니다.</li>
+  </ol>
+  그러나 사용자의 **인터랙션에 따라 상태가 바뀌고**, 그 상태를 기반으로 **API를 재요청해야 하는** 상황이라면 어떨까요? <br />
+  이런 경우, **결국 해당 컴포넌트는 클라이언트 컴포넌트**로 구현될 수밖에 없으며, 클라이언트 번들에 포함됩니다.<br />
+  즉, **RSC를 써도 번들 크기 최적화라는 성능상의 이점은 줄어들게 됩니다.**
+</SectionContent>
+
+<SectionHeader>
+  그래서 어떤 방식이 좋은건가요? 🤔
+</SectionHeader>
+<SectionContent>
+  **서버에서 데이터를 받는다고 해서 절대적으로 빠른 건 아닙니다.** <br />
+  오히려 `TTFB`는 느려질 수 있습니다만, 사용자 입장에서는 **데이터가 한 번에 그려지는 경험**이 더 빠르게 느껴지기도 합니다.
+  하지만 저는 CSR방식으로 로딩 스피너를 먼저 보여주는 방식도 UX 측면에서 나쁘지 않다고 생각합니다. 😅
+
+  <br />
+
+  그래서 개인적으로는 ***“실제로 데이터를 빠르게 가져오느냐?”*** 보다 ***”사용자가 빠르게 느끼게 하려면 어떻게 해야 하는가?”*** 가 올바른 궁금증이지 않을까 생각합니다. <br />
+  다만 `Hydrate 방식`을 사용하면 초기에 의미 있는 콘텐츠를 바로 렌더링할 수 있어 `검색엔진 최적화`에 유리하다는 장점이 있을 수는 있습니다.
+</SectionContent>
+
+<SectionHeader>
+  느낀점
+</SectionHeader>
+<SectionContent>
+  제가 내린 결론은 ***“은탄환은 없다”*** 입니다. <br />
+  단순하게 ***“클라이언트에서 데이터를 fetching하는 방식은 별로야”***, ***“RSC를 사용하는게 좋대”*** 에서 그치지 않고, 어떤 방법에 장단점이 있는지, 지금 내가 처한 상황에서 어떤게 더 적합할지를 고민해보는 경험은 매우 중요합니다. <br />
+
+  <br />
+
+  모든 방식마다 트레이드오프가 존재하고, 한가지 방법을 채택한다면, 나머지 방법은 포기할 수 밖에 없습니다. <br />
+  따라서 다양한 사용자 상황, 서비스 구조, SEO, 성능 등을 모두 고려한 전략적 선택이 중요하지 않을까! 생각해봅니다.
+</SectionContent>
