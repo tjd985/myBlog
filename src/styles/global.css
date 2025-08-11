@@ -10,6 +10,7 @@
   --color-osh-violet: #e5dbff;
   --color-code-background: #656c7633;
   --font-pretendard: 'Pretendard', sans-serif;
+  --leading-osh: 1.7rem;
 }
 
 @layer base {
@@ -22,6 +23,11 @@
   ul {
     @apply list-inside;
     @apply list-disc;
+  }
+
+  ol {
+    @apply list-decimal;
+    @apply list-inside;
   }
 
   body {

@@ -31,9 +31,9 @@ import ImageBackground from "@components/ImageBackground/ImageBackground.astro"
   보통 일반적인 방법으로 리액트 쿼리를 사용하면 다음과 같은 흐름으로 동작합니다.
 
   <ol class='my-[20px]'>
-    <li>**1. 클라이언트 컴포넌트가 마운트됨**</li>
-    <li>**2. `useQuery`를 통해 데이터 fetch 시작**</li>
-    <li>**3. 데이터 응답이 오면 UI를 렌더링**</li>
+    <li>**클라이언트 컴포넌트가 마운트됨**</li>
+    <li>**`useQuery`를 통해 데이터 fetch 시작**</li>
+    <li>**데이터 응답이 오면 UI를 렌더링**</li>
   </ol>
 
   즉, 컴포넌트가 마운트된 이후에 데이터를 요청하게 되며, 그 사이에는 로딩 인디케이터를 보여주게 됩니다. <br />
@@ -216,8 +216,8 @@ import ImageBackground from "@components/ImageBackground/ImageBackground.astro"
 
   이를 위해서 간단하게 `express`와 `Next.js`를 이용해서 서버와 클라이언트를 구축한 뒤,
   <ol class='my-[20px]'>
-    <li>**1. 클라이언트 컴포넌트에서 데이터를 fetching하여 받아서 렌더링하는 경우 (이하 `CSR 방식`)**</li>
-    <li>**2. Hydrate를 통해 서버 컴포넌트에서 데이터를 fetching하여 렌더링하는 경우 (이하 `Hydrate 방식`)**</li>
+    <li>**클라이언트 컴포넌트에서 데이터를 fetching하여 받아서 렌더링하는 경우 (이하 `CSR 방식`)**</li>
+    <li>**Hydrate를 통해 서버 컴포넌트에서 데이터를 fetching하여 렌더링하는 경우 (이하 `Hydrate 방식`)**</li>
   </ol>
 
   두개의 케이스를 비교해보았습니다.
@@ -383,8 +383,8 @@ import ImageBackground from "@components/ImageBackground/ImageBackground.astro"
 
   제가 생각하는 RSC를 사용했을 때의 주요 장점은 다음과 같습니다. <br />
   <ol class='my-[20px]'>
-    <li>**1. 번들 크기 최적화 :** 클라이언트 JS의 양이 줄어들기 때문에 성능에 긍정적인 영향을 줍니다.</li>
-    <li>**2. 초기 렌더에 의미 있는 콘텐츠를 바로 제공할 수 있음 :** 사용자에게 빠른 피드백을 제공하여 UX를 향상시킬 수 있습니다.</li>
+    <li>**번들 크기 최적화 :** 클라이언트 JS의 양이 줄어들기 때문에 성능에 긍정적인 영향을 줍니다.</li>
+    <li>**초기 렌더에 의미 있는 콘텐츠를 바로 제공할 수 있음 :** 사용자에게 빠른 피드백을 제공하여 UX를 향상시킬 수 있습니다.</li>
   </ol>
   그러나 사용자의 **인터랙션에 따라 상태가 바뀌고**, 그 상태를 기반으로 **API를 재요청해야 하는** 상황이라면 어떨까요? <br />
   이런 경우, **결국 해당 컴포넌트는 클라이언트 컴포넌트**로 구현될 수밖에 없으며, 클라이언트 번들에 포함됩니다.<br />
