@@ -30,7 +30,7 @@ import ImageBackground from "@components/ImageBackground/ImageBackground.astro"
 <SectionContent>
   보통 일반적인 방법으로 리액트 쿼리를 사용하면 다음과 같은 흐름으로 동작합니다.
 
-  <ol class='my-[20px]'>
+  <ol class='my-[20px] w-[95%] mx-auto'>
     <li>**클라이언트 컴포넌트가 마운트됨**</li>
     <li>**`useQuery`를 통해 데이터 fetch 시작**</li>
     <li>**데이터 응답이 오면 UI를 렌더링**</li>
@@ -50,7 +50,7 @@ import ImageBackground from "@components/ImageBackground/ImageBackground.astro"
   **2. `Hydrate`를 활용한 방식** <br />
   리액트 쿼리의 `Hydrate` 컴포넌트를 활용해 서버에서 데이터를 prefetch하고, 이를 클라이언트에서 hydrate하는 방식입니다. <br />
   이 방식은 다음과 같은 **장점**이 있습니다.
-  <ul class='my-[20px]'>
+  <ul class='my-[20px] w-[95%] mx-auto'>
     <li>여러 쿼리를 서버에서 한번에 prefetch 가능</li>
     <li>`props drilling` 없이 어디서든 `useQuery`로 데이터 접근 가능</li>
   </ul>
@@ -215,7 +215,7 @@ import ImageBackground from "@components/ImageBackground/ImageBackground.astro"
   <br />
 
   이를 위해서 간단하게 `express`와 `Next.js`를 이용해서 서버와 클라이언트를 구축한 뒤,
-  <ol class='my-[20px]'>
+  <ol class='my-[20px] w-[95%] mx-auto'>
     <li>**클라이언트 컴포넌트에서 데이터를 fetching하여 받아서 렌더링하는 경우 (이하 `CSR 방식`)**</li>
     <li>**Hydrate를 통해 서버 컴포넌트에서 데이터를 fetching하여 렌더링하는 경우 (이하 `Hydrate 방식`)**</li>
   </ol>
@@ -382,7 +382,7 @@ import ImageBackground from "@components/ImageBackground/ImageBackground.astro"
    <br />
 
   제가 생각하는 RSC를 사용했을 때의 주요 장점은 다음과 같습니다. <br />
-  <ol class='my-[20px]'>
+  <ol class='my-[20px] w-[95%] mx-auto'>
     <li>**번들 크기 최적화 :** 클라이언트 JS의 양이 줄어들기 때문에 성능에 긍정적인 영향을 줍니다.</li>
     <li>**초기 렌더에 의미 있는 콘텐츠를 바로 제공할 수 있음 :** 사용자에게 빠른 피드백을 제공하여 UX를 향상시킬 수 있습니다.</li>
   </ol>
